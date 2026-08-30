@@ -58,3 +58,12 @@ Start -> Upload -> analyze_workbook -> Solar -> build_report -> End
 Map Upload `fileUrl` to `file_url` and `fileName` to `file_name` in both tool
 nodes. Map both result `download_url` values into the End response. Never put
 the signed upload URL, API token, or base64 payload in the visible conversation.
+
+In the current Timely UI, upload the packaged skill from the Agent side panel
+with `스킬 + -> .skill/.zip 업로드`. Register the service under
+`스토어 -> 커넥터 -> MCP 커넥터`, then create the workflow from
+`Labs -> AI 에이전트 -> 에이전트 만들기`. Use `Solar Pro 4` for the LLM node.
+These paths are documented in Timely's official
+[agent guide](https://timely-hub.github.io/timely-manual/user/getting-started/agents/),
+[builder guide](https://timely-hub.github.io/timely-manual/user/reference/ai-agents/),
+and [model guide](https://timely-hub.github.io/timely-manual/ai-models/).
