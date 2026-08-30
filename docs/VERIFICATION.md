@@ -22,8 +22,8 @@ the pinned source produces byte-identical pretty-printed JSON.
 
 ```powershell
 cargo fmt --all -- --check
-cargo test --workspace
-cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
 The workspace tests cover:
@@ -42,6 +42,21 @@ The workspace tests cover:
 
 The current workspace run contains 13 passing tests: seven data/report tests,
 three MCP unit tests, and three MCP transport integration tests.
+
+## Dependency migration gate
+
+The initial Dependabot queue was migrated and closed on 2026-08-30:
+
+- `actions/checkout` 6 to 7 ([PR #3](https://github.com/HyunjoJung/sheetbrief/pull/3));
+- `rand` 0.9.5 to 0.10.2, including the `RngCore` to `Rng` API migration
+  ([PR #1](https://github.com/HyunjoJung/sheetbrief/pull/1));
+- `sha2` 0.10.9 to 0.11.0 ([PR #2](https://github.com/HyunjoJung/sheetbrief/pull/2));
+- `base64` 0.22.1 to 0.23.1 ([PR #4](https://github.com/HyunjoJung/sheetbrief/pull/4)); and
+- `zip` 2.4.2 to 8.6.0 ([PR #5](https://github.com/HyunjoJung/sheetbrief/pull/5)).
+
+Each migration passed the Rust 1.92 CI and RustSec gates before merge. The
+combined `main` result then passed the same gates again, including all four
+workbook-container regressions and both MCP transports.
 
 `cargo audit` reports zero known vulnerabilities. It reports two informational
 maintenance warnings (`rustybuzz 0.20.1` and `ttf-parser 0.25.1`) through
@@ -62,9 +77,12 @@ run as UID/GID 65532 on Debian Bookworm. The final smoke run verified:
 - unauthenticated `/sse` returned HTTP 401;
 - authenticated `/sse` emitted the legacy MCP `endpoint` event;
 - authenticated `/mcp` initialized with protocol version `2025-06-18`;
-- the Korean demo produced a 6,901-byte DOCX and 32,387-byte PDF;
+- the Korean demo produced a 7,195-byte DOCX and 32,480-byte PDF;
 - both capability URLs downloaded successfully and had valid ZIP/PDF signatures;
 - the analyzed dataset contained 50 rows at `A3:D52`.
+
+The runtime uses a dedicated writable XDG Fontconfig cache for UID/GID 65532;
+the final smoke log contained no Fontconfig cache warnings.
 
 ## Visual gate
 

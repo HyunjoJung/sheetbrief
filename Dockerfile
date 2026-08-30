@@ -11,11 +11,14 @@ FROM debian:bookworm-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates libfontconfig1 \
+    && mkdir -p /tmp/.cache/fontconfig \
+    && chown -R 65532:65532 /tmp/.cache \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/sheetbrief-mcp /usr/local/bin/sheetbrief-mcp
 
 ENV RUST_LOG=sheetbrief_mcp=info \
-    SHEETBRIEF_BIND=0.0.0.0:10000
+    SHEETBRIEF_BIND=0.0.0.0:10000 \
+    XDG_CACHE_HOME=/tmp/.cache
 EXPOSE 10000
 USER 65532:65532
 
