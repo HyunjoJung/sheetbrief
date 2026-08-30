@@ -10,7 +10,7 @@ use axum::{
     Json, Router,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use rand::RngCore;
+use rand::Rng;
 use reqwest::{redirect::Policy, Url};
 use rmcp::{
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
