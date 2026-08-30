@@ -67,7 +67,7 @@ Dependabot.
 
 The Timely skill packager sorts entries and fixes ZIP timestamps. Two
 consecutive builds were byte-identical at SHA-256
-`5c631a66c9c490a59e7eda383aeabc29117264aefe1320d7f273b5167386e4e9`.
+`a7428596072c9d047a858c6704c61ae6452895e92739f97775967ab148b59520`.
 
 ## Linux container gate
 
@@ -87,10 +87,11 @@ the final smoke log contained no Fontconfig cache warnings.
 
 ## Public HTTPS transport gate
 
-The release container was exposed through a temporary TLS tunnel and tested
-from its public origin. `scripts/smoke-mcp.ps1` and `scripts/smoke-sse.ps1`
-both used the public GitHub demo workbook through `file_url`, not local bytes.
-The runs verified:
+The release container is deployed at
+`https://sheetbrief-mcp.onrender.com`. Its `/healthz` endpoint returned HTTP 200,
+and both transport smoke scripts completed against the permanent public origin.
+Both Streamable HTTP and legacy SSE covered local-workbook base64 and the
+public GitHub demo workbook through `file_url`. The runs verified:
 
 - Streamable HTTP protocol `2025-06-18` initialization;
 - legacy SSE protocol `2024-11-05` initialization and both tool definitions;
@@ -118,12 +119,28 @@ ignored by Git. The visually approved copies under `docs/assets/` and
 
 ## External Timely gate
 
-Public HTTPS verification proves both transports and the Timely-shaped URL
-input, but it does not prove Timely's hosted connector mapping. Do not mark this
-gate complete until a real Timely agent can:
+The hosted Agent path was verified in Timely on 2026-08-30 with the installed
+`sheetbrief` skill, the deployed authenticated HTTP connector, and Solar Pro4.
+The live run:
 
-1. initialize the deployed `/mcp` endpoint and list both tools;
-2. map Upload `fileUrl` and `fileName` without exposing base64 or the signed URL;
-3. receive the compact analysis context without truncation;
-4. return downloadable DOCX and PDF files; and
-5. enforce the bearer token at the deployment edge.
+1. initialized the deployed `/mcp` endpoint and exposed both SheetBrief tools;
+2. called `analyze_workbook` with the canonical HTTPS demo URL and preserved
+   `meeting-sales-demo.xlsx` as `file_name`, without model-visible base64;
+3. received the complete 50-row `A3:D52` context with no parser warnings or
+   truncation;
+4. generated an evidence-linked Korean narrative and called `build_report` with
+   `include_pdf: true`; and
+5. returned downloadable DOCX and PDF capability URLs from the Render origin.
+
+The corrected final Timely run produced a 7,230-byte DOCX and a 31,876-byte
+PDF. The DOCX contained the intended title, purpose, evidence range, and
+corrected Korean wording. The PDF had valid `%PDF` bytes, exactly two A4 pages,
+and passed full-page raster inspection for clipping, overlap, missing glyphs,
+and malformed layout. A follow-up corrected model-generated wording before the
+final artifact check; all displayed numbers remained renderer-controlled from
+the cited evidence IDs.
+
+Timely's direct Agent attachment surface exposes a workspace-local `file://`
+path rather than an HTTPS upload URL. That path is intentionally rejected by
+the remote service. The bundled demo therefore uses its canonical public URL;
+arbitrary private files use the documented Upload-node `fileUrl` workflow.

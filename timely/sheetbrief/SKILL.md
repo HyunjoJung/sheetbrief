@@ -11,20 +11,31 @@ decision and downloadable report, not a generic workbook summary.
 
 ## Workflow
 
-1. Require exactly one Upload-node workbook. Read its `fileUrl`, `fileName`, and
-   `fileType`; preserve `fileName` exactly.
-2. Call `analyze_workbook` once with `file_url: fileUrl` and
-   `file_name: fileName`. Do not print the signed URL or copy file bytes into
-   the conversation.
-3. Stop with a concise, actionable error if SheetBrief rejects the container,
+1. Require exactly one workbook and preserve its file name exactly.
+2. Resolve the HTTPS input URL in this order:
+   - use the Upload node's `fileUrl` for a normal workflow run;
+   - for the bundled `meeting-sales-demo.xlsx` contest demo, use
+     `https://raw.githubusercontent.com/HyunjoJung/sheetbrief/main/data/meeting-sales-demo.xlsx`.
+   A Timely Agent workspace path is local to Timely. Never pass a `file://` URL
+   or copy a workspace file into a base64 tool argument. For any other direct
+   Agent attachment without an HTTPS URL, ask the user to run the Upload-node
+   workflow instead.
+3. Call `analyze_workbook` once with the resolved `file_url` and `file_name`.
+   Do not print the signed URL or copy file bytes into the conversation.
+4. Stop with a concise, actionable error if SheetBrief rejects the container,
    schema, size, or parser state. Never infer missing cells or retry unchanged
    input repeatedly.
-4. Read the returned `signals`, `facts`, `contexts`, and `narrative_contract`.
+5. Read the returned `signals`, `facts`, `contexts`, and `narrative_contract`.
    Build a Korean narrative using the exact schema in
    [references/narrative-contract.md](references/narrative-contract.md).
-5. Call `build_report` with the same `file_url` and `file_name`, the validated
+   For the bundled contest demo, copy the `report_title` and `purpose` strings
+   from that reference exactly.
+6. Reread every Korean narrative string before the tool call. Correct spelling,
+   spacing, and accidental word substitutions while preserving the cited
+   evidence and meaning. The server validates evidence, not prose quality.
+7. Call `build_report` with the same `file_url` and `file_name`, the validated
    narrative, and `include_pdf: true`.
-6. Return the main conclusion in one sentence, then expose the `download_url`
+8. Return the main conclusion in one sentence, then expose the `download_url`
    from both generated files. Keep parser diagnostics, signed input URLs, and
    base64 out of the visible answer.
 

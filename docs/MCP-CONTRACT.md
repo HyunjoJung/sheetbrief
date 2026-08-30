@@ -79,7 +79,8 @@ back to base64 for test and CLI clients.
 - Data row maximum: 100,000
 - Input transport: exactly one of `file_url` or standard `workbook_base64`
 - `file_url`: HTTPS port 443, no credentials, no redirects, streamed size limit
-- Default remote hosts: `storage.azure.com` and `*.blob.core.windows.net`
+- Default remote hosts: `storage.azure.com`, `*.blob.core.windows.net`, and
+  `raw.githubusercontent.com` for the pinned public demo
 - Additional exact hosts or suffixes: `SHEETBRIEF_ALLOWED_FILE_HOSTS`
 - DNS results are checked for public addresses and pinned into the HTTP client
 
@@ -93,14 +94,17 @@ and `fileType`; its
 [workflow executor](https://github.com/timely-hub/timely-gpt-sdk/blob/e0fb8e394986438a330e6536d25526b490a20793/src/workflow/workflow-executor.ts#L294-L320)
 invokes remote MCP nodes when their transport is `sse`. SheetBrief retains that
 compatibility endpoint and maps the first two Upload fields directly to both
-tools. The live Timely deployment still requires an integration run:
+tools.
 
-1. initializing `/mcp` and listing both tools;
-2. passing Upload `fileUrl` and `fileName` without model-visible base64;
-3. receiving `context` without truncation;
-4. exposing DOCX and PDF as downloadable files; and
-5. confirming auth headers, the observed storage host, and size limits.
+The hosted connector integration ran successfully on 2026-08-30 against
+`https://sheetbrief-mcp.onrender.com/mcp`. Solar Pro4 invoked both tools with the
+pinned public workbook, received the complete compact context, and returned
+working DOCX and PDF capability URLs. Independent public smoke tests cover
+base64 and URL input, both transports, bearer authentication, host filtering,
+size limits, and download signatures.
 
-Local tests cover both transports and authenticate the SSE GET and message POST
-with the same bearer header. The remaining gate is the hosted Timely connector
-and File Upload mapping, not an unimplemented transport adapter.
+The Timely direct Agent attachment surface currently exposes a workspace-local
+`file://` path. SheetBrief rejects it because a remote server cannot read
+Timely's workspace. General private-file runs therefore use the builder's
+Upload-node `fileUrl` mapping; the direct Agent contest demo uses the pinned
+public HTTPS workbook.

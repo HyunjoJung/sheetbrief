@@ -4,18 +4,33 @@ param(
     [string]$BaseUrl,
     [Parameter(Mandatory = $true)]
     [string]$Token,
-    [Parameter(Mandatory = $true)]
+    [string]$Workbook = (Join-Path $PSScriptRoot "..\data\meeting-sales-demo.xlsx"),
     [string]$FileUrl,
     [string]$FileName
 )
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = $BaseUrl.TrimEnd('/')
-if (-not $FileName) {
-    $FileName = [IO.Path]::GetFileName(([Uri]$FileUrl).AbsolutePath)
+
+$inputArguments = @{}
+if ($FileUrl) {
+    if (-not $FileName) {
+        $FileName = [IO.Path]::GetFileName(([Uri]$FileUrl).AbsolutePath)
+    }
+    if (-not $FileName) {
+        throw "FileName is required when it cannot be derived from FileUrl"
+    }
+    $inputArguments.file_name = $FileName
+    $inputArguments.file_url = $FileUrl
+    $sourceMode = "file_url"
 }
-if (-not $FileName) {
-    throw "FileName is required when it cannot be derived from FileUrl"
+else {
+    $workbookPath = (Resolve-Path -LiteralPath $Workbook).Path
+    $inputArguments.file_name = [IO.Path]::GetFileName($workbookPath)
+    $inputArguments.workbook_base64 = [Convert]::ToBase64String(
+        [IO.File]::ReadAllBytes($workbookPath)
+    )
+    $sourceMode = "workbook_base64"
 }
 
 function Read-SseEvent {
@@ -148,7 +163,6 @@ try {
         throw "Unexpected MCP tools: $($toolNames -join ', ')"
     }
 
-    $inputArguments = @{ file_name = $FileName; file_url = $FileUrl }
     Send-McpMessage -Client $client -Endpoint $endpoint -Payload @{
         jsonrpc = "2.0"
         id = 3
@@ -187,6 +201,7 @@ try {
         status = "ok"
         transport = "sse"
         protocol_version = $initialized.result.protocolVersion
+        source_mode = $sourceMode
         tools = $toolNames
         source_rows = $structured.context.dataset.data_rows
         source_range = $structured.context.dataset.source_range

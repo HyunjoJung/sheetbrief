@@ -5,7 +5,7 @@ Pass this object as `narrative` to `build_report`:
 ```json
 {
   "report_title": "판매 실적 의사결정 브리프",
-  "purpose": "지역·품목·월별 변화를 비교해 회의의 우선순위와 다음 행동을 정리합니다.",
+  "purpose": "지역·품목·월별 판매량을 비교해 회의 우선순위와 다음 행동을 정리한다.",
   "summary": [
     {
       "text": "선두 지역과 최저 지역의 격차를 이번 회의의 첫 판단으로 봅니다.",
@@ -41,4 +41,7 @@ Constraints enforced by the server:
 - no unknown top-level or point fields
 
 Recommended contest brief: two or three summary points, two or three priorities,
-and three actions. Keep each point to one sentence.
+and three actions. Keep each point to one sentence. For the bundled contest
+demo, preserve the example `report_title` and `purpose` exactly. Before calling
+`build_report`, reread every Korean string for spelling, spacing, and accidental
+word substitutions.

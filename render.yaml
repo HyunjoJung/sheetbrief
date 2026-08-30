@@ -12,4 +12,4 @@ services:
       - key: SHEETBRIEF_API_TOKEN
         generateValue: true
       - key: SHEETBRIEF_ALLOWED_FILE_HOSTS
-        value: storage.azure.com,.blob.core.windows.net
+        value: storage.azure.com,.blob.core.windows.net,raw.githubusercontent.com

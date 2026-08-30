@@ -13,7 +13,8 @@ The repository includes `render.yaml` and a multi-stage `Dockerfile`.
    MCP connector's bearer-token setting.
 4. Verify `https://<service>.onrender.com/healthz` returns `{"status":"ok"}`.
 5. Register `https://<service>.onrender.com/mcp` in Timely Agent's HTTP MCP
-   connector.
+   connector. The maintained public instance is
+   `https://sheetbrief-mcp.onrender.com/mcp`.
 
 The same deployment also exposes legacy SSE at `/sse`. Use `/mcp` in the
 current Timely Agent `mcpServers` JSON connector; `/sse` remains available for
@@ -25,8 +26,9 @@ traffic and can take about a minute to wake. Call `/healthz` before a judged dem
 and wait for a 200 response.
 
 The default URL allowlist accepts Timely-style Azure storage URLs at
-`storage.azure.com` and `*.blob.core.windows.net`. If the live Upload node
-returns another host, append that exact host with
+`storage.azure.com` and `*.blob.core.windows.net`, plus the canonical contest
+demo at `raw.githubusercontent.com`. If the live Upload node returns another
+host, append that exact host with
 `SHEETBRIEF_ALLOWED_FILE_HOSTS`; do not use a catch-all wildcard.
 
 ## Local container verification
@@ -50,7 +52,9 @@ Run the full MCP and download smoke test with:
   -Token replace-with-at-least-32-random-characters
 ```
 
-For a deployed service, exercise Timely's URL-shaped input over both transports:
+With no `FileUrl`, both scripts encode the local Korean demo workbook and test
+the standard base64 input. For a deployed service, also exercise the
+URL-shaped input over both transports:
 
 ```powershell
 .\scripts\smoke-mcp.ps1 `
@@ -79,6 +83,11 @@ Start -> File Upload -> Tool Node: analyze_workbook
 Map Upload `fileUrl` to `file_url` and `fileName` to `file_name` in both tool
 nodes. Map both result `download_url` values into the End response. Never put
 the signed upload URL, API token, or base64 payload in the visible conversation.
+
+A direct Timely Agent attachment may be represented only as a workspace-local
+`file://` path. A remote MCP server cannot dereference that path. Use the
+Upload-node workflow for arbitrary private files; the bundled contest demo can
+use its canonical HTTPS URL from `timely/sheetbrief/SKILL.md`.
 
 In the current Timely UI, open `에이전트` and use the right panel:
 

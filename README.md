@@ -86,8 +86,10 @@ allowlist·공개 IP 확인·리다이렉트 차단·10 MiB 스트리밍 제한�
 추가하고, `커넥터 + -> JSON 등록 -> http`에서 `/mcp` 주소와 bearer token을
 등록합니다. `/sse`는 구형 워크플로 SDK 호환 경로로 유지됩니다. 업로드용 스킬
 원본은 [timely/sheetbrief/SKILL.md](timely/sheetbrief/SKILL.md)에 있습니다.
-실제 Timely 첨부파일 전달과 다운로드 동작은 외부 연동 게이트로 별도 표시하며,
-로컬 MCP 테스트 통과와 혼동하지 않습니다.
+공개 Render 배포와 실제 Timely Agent 연결은 Solar Pro4로 검증했습니다. 공개
+데모는 저장소의 고정 HTTPS 파일을 사용하고, 일반 사용자 파일은 Timely Upload
+노드가 제공하는 `fileUrl`을 두 도구에 전달합니다. 직접 Agent 첨부가 노출하는
+로컬 `file://` 경로는 원격 MCP 입력으로 사용하지 않습니다.
 
 ```powershell
 .\scripts\package-timely-skill.ps1
