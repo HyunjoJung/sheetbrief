@@ -1,5 +1,5 @@
-use sheetbrief_mcp::build_router;
-use std::{net::SocketAddr, str::FromStr};
+use sheetbrief_mcp::{build_router_with_config, ServerConfig};
+use std::{io, net::SocketAddr, str::FromStr};
 use tokio_util::sync::CancellationToken;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -23,19 +23,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !address.ip().is_loopback() && token.is_none() {
         return Err("a non-loopback bind requires SHEETBRIEF_API_TOKEN".into());
     }
+    let config = ServerConfig::from_env()
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
 
     let cancellation_token = CancellationToken::new();
-    let app = build_router(cancellation_token.child_token(), token);
+    let app = build_router_with_config(cancellation_token.child_token(), token, config);
     let listener = tokio::net::TcpListener::bind(address).await?;
     tracing::info!(address = %listener.local_addr()?, "SheetBrief MCP listening");
     axum::serve(listener, app)
         .with_graceful_shutdown({
             let cancellation_token = cancellation_token.clone();
             async move {
-                let _ = tokio::signal::ctrl_c().await;
+                shutdown_signal().await;
                 cancellation_token.cancel();
             }
         })
         .await?;
     Ok(())
+}
+
+#[cfg(unix)]
+async fn shutdown_signal() {
+    use tokio::signal::unix::{signal, SignalKind};
+
+    let mut terminate = signal(SignalKind::terminate()).expect("install SIGTERM handler");
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {}
+        _ = terminate.recv() => {}
+    }
+}
+
+#[cfg(not(unix))]
+async fn shutdown_signal() {
+    let _ = tokio::signal::ctrl_c().await;
 }

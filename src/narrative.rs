@@ -2,7 +2,7 @@ use crate::{Analysis, Result, SheetBriefError};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-const MAX_POINTS_PER_SECTION: usize = 8;
+const MAX_POINTS_PER_SECTION: usize = 4;
 const MAX_POINT_CHARS: usize = 400;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -23,79 +23,94 @@ pub struct NarrativePoint {
 }
 
 pub fn default_narrative(analysis: &Analysis) -> Result<Narrative> {
-    let top_regions = top_ties(&analysis.regions);
+    let top_regions = top_ties(&analysis.regions).collect::<Vec<_>>();
     let top_item = analysis.items.first().map(|value| value.fact_id.clone());
     let top_month = analysis
         .months
         .iter()
         .max_by(|left, right| left.value.total_cmp(&right.value))
         .map(|value| value.fact_id.clone());
-    let bottom_region = analysis.regions.last().map(|value| value.fact_id.clone());
-    let sparse_months = analysis
+    let low_month = analysis
         .months
         .iter()
-        .filter(|value| value.row_count == 1)
-        .map(|value| value.fact_id.clone())
-        .collect::<Vec<_>>();
+        .min_by(|left, right| left.value.total_cmp(&right.value))
+        .map(|value| value.fact_id.clone());
+    let bottom_region = analysis.regions.last().map(|value| value.fact_id.clone());
 
+    let mut summary_evidence = vec![analysis.total.fact_id.clone()];
+    summary_evidence.extend(top_regions.iter().cloned());
+    if let Some(bottom_region) = bottom_region.as_ref() {
+        summary_evidence.push(bottom_region.clone());
+    }
     let mut summary = vec![NarrativePoint {
-        text: "지역별 실적은 상위권과 하위권의 차이가 분명합니다.".to_string(),
-        evidence_ids: std::iter::once(analysis.total.fact_id.clone())
-            .chain(top_regions)
-            .collect(),
+        text: "선두 지역과 최저 지역의 격차가 이번 회의의 첫 번째 의사결정 포인트입니다."
+            .to_string(),
+        evidence_ids: summary_evidence,
     }];
     if let Some(top_item) = top_item {
         summary.push(NarrativePoint {
-            text: "품목별로는 가장 큰 비중을 차지하는 항목이 뚜렷합니다.".to_string(),
+            text: "상위 품목에 실적이 집중돼 있어 반복 가능한 판매 요인을 확인할 가치가 있습니다."
+                .to_string(),
             evidence_ids: vec![top_item],
         });
     }
-    if let Some(top_month) = top_month {
+    if let (Some(top_month), Some(low_month)) = (top_month.as_ref(), low_month.as_ref()) {
         summary.push(NarrativePoint {
-            text: "월별 흐름은 일정하지 않아 피크가 발생한 구간의 배경을 확인할 필요가 있습니다."
+            text: "월별 최고점과 최저점의 차이가 커서 변동 원인을 분리해 볼 필요가 있습니다."
                 .to_string(),
-            evidence_ids: vec![top_month],
+            evidence_ids: vec![top_month.clone(), low_month.clone()],
         });
     }
 
     let mut priorities = Vec::new();
     if let Some(bottom_region) = bottom_region.as_ref() {
         priorities.push(NarrativePoint {
-            text: "낮은 지역 수치가 실제 성과인지, 채널이나 입력 범위 누락인지 먼저 확인합니다."
-                .to_string(),
+            text: "최저 지역의 채널 구성과 담당 계정 변화를 먼저 확인합니다.".to_string(),
             evidence_ids: vec![bottom_region.clone()],
         });
     }
-    if !sparse_months.is_empty() {
+    if let Some(top_month) = top_month.as_ref() {
         priorities.push(NarrativePoint {
-            text: "관측 기록이 적은 달은 실적보다 수집 범위의 영향을 받았을 수 있습니다."
-                .to_string(),
-            evidence_ids: sparse_months.clone(),
+            text: "최고 월의 성과가 일회성인지 다음 기간에도 재현 가능한지 확인합니다.".to_string(),
+            evidence_ids: vec![top_month.clone()],
         });
     }
-    priorities.push(NarrativePoint {
-        text: "목표치와 비교 기간이 없어 달성 여부는 아직 판단하지 않습니다.".to_string(),
-        evidence_ids: vec!["context.target".to_string()],
-    });
+    if let Some(low_month) = low_month.as_ref() {
+        priorities.push(NarrativePoint {
+            text: "최저 월의 하락이 실제 수요 변화인지 집계 범위의 영향인지 분리합니다."
+                .to_string(),
+            evidence_ids: vec![low_month.clone()],
+        });
+    }
 
     let narrative = Narrative {
-        report_title: "판매 실적 회의 브리프".to_string(),
+        report_title: "판매 실적 의사결정 브리프".to_string(),
         purpose:
-            "지역·품목·월별 흐름을 비교해, 오늘 회의에서 확인할 질문과 다음 행동을 정리했습니다."
+            "지역·품목·월별 변화를 한 번에 비교해, 회의에서 결정할 우선순위와 담당 행동을 정리했습니다."
                 .to_string(),
         summary,
         priorities,
         actions: vec![
             NarrativePoint {
-                text: "지역별 원본 담당자와 채널 범위를 대조합니다.".to_string(),
-                evidence_ids: bottom_region.into_iter().collect(),
+                text: "최저 지역의 회복 과제에 담당자와 완료 기한을 지정합니다.".to_string(),
+                evidence_ids: bottom_region
+                    .clone()
+                    .into_iter()
+                    .chain(top_regions.iter().cloned())
+                    .collect(),
             },
             NarrativePoint {
-                text: "관측 기록이 적은 달의 집계 완료 여부를 확인합니다.".to_string(),
-                evidence_ids: sparse_months,
+                text: "최고 월을 만든 지역과 품목의 실행 방식을 다음 계획에 반영합니다."
+                    .to_string(),
+                evidence_ids: top_month
+                    .clone()
+                    .into_iter()
+                    .chain(top_regions.iter().cloned())
+                    .collect(),
             },
             NarrativePoint {
-                text: "목표치와 전기·전년 비교를 붙인 뒤 성과 판단을 확정합니다.".to_string(),
+                text: "다음 회의부터 목표와 비교 기간이 함께 들어오도록 입력 양식을 표준화합니다."
+                    .to_string(),
                 evidence_ids: vec![
                     "context.target".to_string(),
                     "context.comparison_period".to_string(),

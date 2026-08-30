@@ -14,3 +14,24 @@
 The upstream license is bundled as `LICENSE.libxlsxwriter.txt`. This fixture is
 not evidence that SheetBrief handles every workplace workbook; it is the pinned
 oracle for the preliminary end-to-end path.
+
+`meeting-sales-demo.xlsx` is a reproducible derivative of the same workbook.
+It preserves the numeric rows and translates the headers, regions, products,
+and months into Korean for the MABC meeting-brief demonstration. Regenerate it
+with:
+
+```powershell
+cargo run --example make_demo_workbook
+```
+
+The `.xls`, `.xlsb`, and `.ods` files with the same base name are format-only
+derivatives created from `meeting-sales-demo.xlsx`. On Windows with Microsoft
+Excel installed, regenerate them with:
+
+```powershell
+.\scripts\generate-format-variants.ps1
+```
+
+These variants exist to prove that the same SheetBrief schema and numeric
+oracle pass through all four advertised containers. They do not expand the
+underlying dataset or add private data.

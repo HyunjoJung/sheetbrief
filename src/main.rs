@@ -1,4 +1,6 @@
-use sheetbrief::{analyze_workbook, build_report, default_narrative, Result, SheetBriefError};
+use sheetbrief::{
+    analyze_workbook, build_report, build_report_bundle, default_narrative, Result, SheetBriefError,
+};
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -31,13 +33,16 @@ fn run() -> Result<()> {
             std::fs::create_dir_all(&output_directory)?;
             let analysis = analyze_path(Path::new(input))?;
             let narrative = default_narrative(&analysis)?;
-            let report = build_report(&analysis, &narrative)?;
+            let report = build_report_bundle(&analysis, &narrative)?;
             let analysis_path = output_directory.join("analysis.json");
-            let report_path = output_directory.join("report.docx");
+            let docx_path = output_directory.join("report.docx");
+            let pdf_path = output_directory.join("report.pdf");
             write_json(&analysis_path, &analysis)?;
-            write_bytes(&report_path, &report)?;
+            write_bytes(&docx_path, &report.docx)?;
+            write_bytes(&pdf_path, &report.pdf)?;
             println!("analysis: {}", analysis_path.display());
-            println!("report: {}", report_path.display());
+            println!("docx: {}", docx_path.display());
+            println!("pdf: {}", pdf_path.display());
         }
         _ => return Err(usage()),
     }
@@ -72,7 +77,7 @@ fn write_bytes(path: &Path, bytes: &[u8]) -> Result<()> {
 
 fn usage() -> SheetBriefError {
     SheetBriefError::Usage(
-        "sheetbrief-prototype analyze INPUT OUTPUT_JSON | report INPUT OUTPUT_DOCX | run INPUT OUTPUT_DIR"
+        "sheetbrief analyze INPUT OUTPUT_JSON | report INPUT OUTPUT_DOCX | run INPUT OUTPUT_DIR"
             .to_string(),
     )
 }

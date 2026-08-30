@@ -1,0 +1,13 @@
+.git
+.github
+artifacts
+data
+docs
+examples
+scripts
+submission
+target
+tests
+timely
+*.md
+!README.md

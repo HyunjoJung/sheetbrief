@@ -2,16 +2,16 @@
 
 ## Transport
 
-- Endpoint: `/mcp`
-- Protocol: MCP Streamable HTTP using the official Rust SDK `rmcp 3.1.4`
-- Responses may use Server-Sent Events as defined by Streamable HTTP.
+- Timely endpoint: `/sse` with legacy SSE message posting at `/message`
+- Current-client endpoint: `/mcp` with MCP Streamable HTTP
+- Implementation: official Rust SDK `rmcp 3.1.4` for Streamable HTTP and a
+  bounded compatibility adapter for Timely's legacy SSE handshake
 - Health endpoint: `GET /healthz`
 - Default bind: `127.0.0.1:8787`
 
 The service refuses a non-loopback bind unless `SHEETBRIEF_API_TOKEN` is set.
-When set, the token must contain at least 32 characters and MCP requests require
-`Authorization: Bearer <token>`. TLS is the responsibility of the deployment
-edge.
+The token must contain at least 32 characters and MCP requests require
+`Authorization: Bearer <token>`. TLS belongs at the deployment edge.
 
 ## Tools
 
@@ -22,13 +22,14 @@ Input:
 ```json
 {
   "file_name": "sales.xlsx",
-  "workbook_base64": "..."
+  "file_url": "https://storage.example/signed/sales.xlsx"
 }
 ```
 
-Returns the deterministic `Analysis` object: parser diagnostics, selected
-schema, aggregates, fact IDs, source range, row counts, and missing business
-context.
+Returns a compact `AgentContext`, not the full parser dump. It contains the
+input identity, selected sheet and range, parser state, signal fact IDs, the
+complete bounded fact catalog, missing-context IDs, and the narrative contract
+Solar must follow.
 
 ### `build_report`
 
@@ -37,41 +38,67 @@ Input:
 ```json
 {
   "file_name": "sales.xlsx",
-  "workbook_base64": "...",
-  "narrative": null
+  "file_url": "https://storage.example/signed/sales.xlsx",
+  "narrative": {
+    "report_title": "판매 실적 의사결정 브리프",
+    "purpose": "회의에서 우선순위와 다음 행동을 정합니다.",
+    "summary": [
+      {"text": "선두 지역과 최저 지역의 격차를 먼저 봅니다.", "evidence_ids": ["..."]}
+    ],
+    "priorities": [
+      {"text": "최저 지역의 채널 구성을 확인합니다.", "evidence_ids": ["..."]}
+    ],
+    "actions": [
+      {"text": "회복 과제의 담당자와 기한을 지정합니다.", "evidence_ids": ["..."]}
+    ]
+  },
+  "include_pdf": true
 }
 ```
 
-`narrative` may contain Solar-authored `report_title`, `purpose`, `summary`,
-`priorities`, and `actions`. Every point must cite known `evidence_ids` and may
-not contain raw ASCII digits; the renderer inserts authoritative values from
-the cited facts. When `narrative` is `null`, SheetBrief uses a deterministic
-fallback narrative.
+Every narrative point must cite known `evidence_ids` and cannot contain raw
+ASCII digits. The renderer inserts authoritative values from the cited facts.
+When `narrative` is `null`, SheetBrief uses its deterministic fallback.
 
-The result contains the same analysis plus a base64-encoded DOCX, media type,
-file name, byte length, and SHA-256. The DOCX is reopened with `rwml` before the
-tool returns it.
+The response contains:
+
+- `context`: the same compact `AgentContext`
+- `report`: DOCX payload metadata and a capability download URL
+- `preview_pdf`: the equivalent PDF payload when `include_pdf` is true
+
+The DOCX is reopened with `rwml` before return. PDF rendering uses the same
+`rwml` document model and bundled fonts. When `SHEETBRIEF_PUBLIC_BASE_URL` is
+set, generated files are held in memory for 15 minutes and returned through
+unguessable `/downloads/...` URLs. Local mode without a public base URL falls
+back to base64 for test and CLI clients.
 
 ## Bounds
 
+- Supported containers: `.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`
 - Decoded workbook maximum: 10 MiB
 - Data row maximum: 100,000
-- Workbook input is accepted only as standard base64 in this preliminary slice.
-- Remote URL fetching is intentionally absent until an allowlist and DNS/redirect
-  rebinding policy are implemented.
+- Input transport: exactly one of `file_url` or standard `workbook_base64`
+- `file_url`: HTTPS port 443, no credentials, no redirects, streamed size limit
+- Default remote hosts: `storage.azure.com` and `*.blob.core.windows.net`
+- Additional exact hosts or suffixes: `SHEETBRIEF_ALLOWED_FILE_HOSTS`
+- DNS results are checked for public addresses and pinned into the HTTP client
 
 ## Timely gate
 
-Timely publicly labels its remote MCP URL as an SSE endpoint, while the current
-MCP specification and Rust SDK use Streamable HTTP. Do not mark Timely transport
-complete until a real Timely agent has passed all of these checks:
+Timely's official SDK returns Upload-node objects with `fileUrl`, `fileName`,
+and `fileType`. Its
+[workflow executor](https://github.com/timely-hub/timely-gpt-sdk/blob/e0fb8e394986438a330e6536d25526b490a20793/src/workflow/workflow-executor.ts#L294-L320)
+currently invokes remote MCP nodes when their transport is `sse`; it also
+forwards configured request headers. The SheetBrief skill maps the first two
+Upload fields directly to both MCP tools. The live Timely deployment still
+requires an integration run:
 
-1. Initialize and list both SheetBrief tools.
-2. Transfer an attached workbook without copying base64 through the model text.
-3. Receive `analysis` without truncation.
-4. Make the generated DOCX downloadable in the Timely conversation.
-5. Confirm authentication headers and observed request/response size limits.
+1. initializing and listing both tools;
+2. passing Upload `fileUrl` and `fileName` without model-visible base64;
+3. receiving `context` without truncation;
+4. exposing DOCX and PDF as downloadable files; and
+5. confirming auth headers, the observed storage host, and size limits.
 
-If Timely requires the retired standalone HTTP+SSE transport rather than
-Streamable HTTP, add a narrow compatibility adapter after observing the actual
-handshake. Do not weaken the deterministic core or duplicate workbook logic.
+Local tests cover both transports and authenticate the SSE GET and message POST
+with the same bearer header. The remaining gate is the hosted Timely handshake,
+not an unimplemented transport adapter.

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sheetbrief-mcp
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - key: SHEETBRIEF_BIND
+        value: 0.0.0.0:10000
+      - key: SHEETBRIEF_API_TOKEN
+        generateValue: true
+      - key: SHEETBRIEF_ALLOWED_FILE_HOSTS
+        value: storage.azure.com,.blob.core.windows.net

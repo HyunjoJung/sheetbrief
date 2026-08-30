@@ -1,15 +1,20 @@
 #![forbid(unsafe_code)]
 
+mod agent;
 mod analysis;
 mod narrative;
 mod report;
 
+pub use agent::{
+    build_agent_context, AgentContext, AgentDataset, AgentInput, AgentParser, AgentSignals,
+    NarrativeContract,
+};
 pub use analysis::{
     analyze_workbook, Aggregate, Analysis, ColumnBinding, ContextStatus, DatasetSummary, Fact,
     InputMetadata, ParserSummary, SourceRef,
 };
 pub use narrative::{default_narrative, validate_narrative, Narrative, NarrativePoint};
-pub use report::build_report;
+pub use report::{build_report, build_report_bundle, ReportBundle};
 
 pub const MAX_WORKBOOK_BYTES: usize = 10 * 1024 * 1024;
 pub const MAX_DATA_ROWS: usize = 100_000;

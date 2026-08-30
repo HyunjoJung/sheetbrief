@@ -1,0 +1,60 @@
+# Deployment
+
+SheetBrief MCP is stateless except for generated download files, which are held
+in memory for 15 minutes. No database or persistent disk is required.
+
+## Render free deployment
+
+The repository includes `render.yaml` and a multi-stage `Dockerfile`.
+
+1. Push the repository to a public Git host.
+2. In Render, create a Blueprint from the repository.
+3. Keep the generated `SHEETBRIEF_API_TOKEN` private and copy it into the Timely
+   MCP connector's bearer-token setting.
+4. Verify `https://<service>.onrender.com/healthz` returns `{"status":"ok"}`.
+5. Register `https://<service>.onrender.com/sse` as Timely's MCP endpoint.
+
+The same deployment also exposes Streamable HTTP at `/mcp` for current MCP
+clients. Timely's published workflow SDK currently invokes remote tools through
+the SSE transport, so the contest connector must use `/sse`.
+
+Render injects `RENDER_EXTERNAL_URL`; SheetBrief uses it automatically for the
+capability download links. A free Render service sleeps after 15 minutes without
+traffic and can take about a minute to wake. Call `/healthz` before a judged demo
+and wait for a 200 response.
+
+The default URL allowlist accepts Timely-style Azure storage URLs at
+`storage.azure.com` and `*.blob.core.windows.net`. If the live Upload node
+returns another host, append that exact host with
+`SHEETBRIEF_ALLOWED_FILE_HOSTS`; do not use a catch-all wildcard.
+
+## Local container verification
+
+```powershell
+docker build -t sheetbrief-mcp .
+docker run --rm -p 8787:10000 `
+  -e SHEETBRIEF_API_TOKEN=replace-with-at-least-32-random-characters `
+  -e SHEETBRIEF_PUBLIC_BASE_URL=http://localhost:8787 `
+  sheetbrief-mcp
+```
+
+Then check `http://localhost:8787/healthz`. The production public base URL must
+use HTTPS; loopback HTTP is accepted only for local testing.
+
+Run the full MCP and download smoke test with:
+
+```powershell
+.\scripts\smoke-mcp.ps1 `
+  -BaseUrl http://127.0.0.1:8787 `
+  -Token replace-with-at-least-32-random-characters
+```
+
+## Timely wiring
+
+```text
+Start -> Upload -> analyze_workbook -> Solar -> build_report -> End
+```
+
+Map Upload `fileUrl` to `file_url` and `fileName` to `file_name` in both tool
+nodes. Map both result `download_url` values into the End response. Never put
+the signed upload URL, API token, or base64 payload in the visible conversation.
