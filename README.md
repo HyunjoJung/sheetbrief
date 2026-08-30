@@ -91,6 +91,19 @@ allowlist·공개 IP 확인·리다이렉트 차단·10 MiB 스트리밍 제한�
 노드가 제공하는 `fileUrl`을 두 도구에 전달합니다. 직접 Agent 첨부가 노출하는
 로컬 `file://` 경로는 원격 MCP 입력으로 사용하지 않습니다.
 
+Timely Agent 대화에서 직접 실행할 때는 클립 첨부만 하지 말고 HTTPS
+`fileUrl`과 원래 `fileName`을 함께 입력합니다.
+
+```text
+fileUrl: https://<allowed-host>/sales.xlsx
+fileName: sales.xlsx
+이 엑셀을 분석해 다음 회의용 의사결정 브리프 DOCX와 PDF를 만들어줘.
+```
+
+`fileUrl`은 Timely File Upload 노드의 출력값을 사용합니다. SheetBrief 스킬은
+이를 MCP 도구의 `file_url`로 변환하며, URL이나 파일명이 없으면 먼저 입력을
+요청합니다.
+
 ```powershell
 .\scripts\package-timely-skill.ps1
 ```

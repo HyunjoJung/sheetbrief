@@ -67,7 +67,7 @@ Dependabot.
 
 The Timely skill packager sorts entries and fixes ZIP timestamps. Two
 consecutive builds were byte-identical at SHA-256
-`a7428596072c9d047a858c6704c61ae6452895e92739f97775967ab148b59520`.
+`90f39cce4b6227eecf6c9e51dddc6551aa9e2198d38ee4d379a15915f48ef07a`.
 
 ## Linux container gate
 
@@ -144,3 +144,18 @@ Timely's direct Agent attachment surface exposes a workspace-local `file://`
 path rather than an HTTPS upload URL. That path is intentionally rejected by
 the remote service. The bundled demo therefore uses its canonical public URL;
 arbitrary private files use the documented Upload-node `fileUrl` workflow.
+
+## Timely feature coverage
+
+The Stage 1 integration uses the Timely surfaces that are material to the
+single-function agent:
+
+- Solar Pro4 performs the Korean evidence-linked narrative step;
+- an externally packaged `.zip` skill defines the repeatable workflow;
+- an authenticated HTTP MCP connector exposes both SheetBrief tools;
+- the agent chains `analyze_workbook` and `build_report`; and
+- Timely returns the generated DOCX and PDF as downloadable files.
+
+Scheduled automation, messenger notification, multi-agent delegation, and
+Skill Store publication are not part of this single-run contest workflow and
+are not claimed as verified features.

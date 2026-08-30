@@ -14,12 +14,16 @@ decision and downloadable report, not a generic workbook summary.
 1. Require exactly one workbook and preserve its file name exactly.
 2. Resolve the HTTPS input URL in this order:
    - use the Upload node's `fileUrl` for a normal workflow run;
+   - in a direct Agent conversation, accept an explicitly supplied HTTPS
+     `fileUrl` and its original `fileName`, then map them to MCP `file_url` and
+     `file_name`;
    - for the bundled `meeting-sales-demo.xlsx` contest demo, use
      `https://raw.githubusercontent.com/HyunjoJung/sheetbrief/main/data/meeting-sales-demo.xlsx`.
    A Timely Agent workspace path is local to Timely. Never pass a `file://` URL
    or copy a workspace file into a base64 tool argument. For any other direct
-   Agent attachment without an HTTPS URL, ask the user to run the Upload-node
-   workflow instead.
+   Agent attachment without an HTTPS URL or file name, ask exactly:
+   `Timely 파일 업로드 노드에서 받은 HTTPS fileUrl과 원래 fileName을 입력해 주세요.`
+   Do not call either SheetBrief tool until both values are available.
 3. Call `analyze_workbook` once with the resolved `file_url` and `file_name`.
    Do not print the signed URL or copy file bytes into the conversation.
 4. Stop with a concise, actionable error if SheetBrief rejects the container,

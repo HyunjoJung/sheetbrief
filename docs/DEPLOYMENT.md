@@ -89,6 +89,18 @@ A direct Timely Agent attachment may be represented only as a workspace-local
 Upload-node workflow for arbitrary private files; the bundled contest demo can
 use its canonical HTTPS URL from `timely/sheetbrief/SKILL.md`.
 
+For a direct Agent conversation, enter the Upload-node values explicitly:
+
+```text
+fileUrl: https://<allowed-host>/sales.xlsx
+fileName: sales.xlsx
+Analyze this workbook and create the meeting brief as DOCX and PDF.
+```
+
+The skill maps camel-case `fileUrl` and `fileName` to MCP arguments `file_url`
+and `file_name`. A paperclip attachment alone is not sufficient when Timely
+exposes only a workspace-local `file://` path.
+
 In the current Timely UI, open `에이전트` and use the right panel:
 
 1. `스킬 + -> .skill/.zip 업로드` for `artifacts/sheetbrief-timely.zip`.
