@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 sheetbrief = { path = ".." }
 axum = "0.8"
-base64 = "0.22"
+base64 = "0.23"
 rand = "0.10"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 rmcp = { version = "=3.1.4", features = ["transport-streamable-http-server"] }
