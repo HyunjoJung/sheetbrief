@@ -122,7 +122,7 @@ Public HTTPS verification proves both transports and the Timely-shaped URL
 input, but it does not prove Timely's hosted connector mapping. Do not mark this
 gate complete until a real Timely agent can:
 
-1. initialize the deployed `/sse` endpoint and list both tools;
+1. initialize the deployed `/mcp` endpoint and list both tools;
 2. map Upload `fileUrl` and `fileName` without exposing base64 or the signed URL;
 3. receive the compact analysis context without truncation;
 4. return downloadable DOCX and PDF files; and

@@ -73,8 +73,8 @@ $env:SHEETBRIEF_API_TOKEN = "replace-with-at-least-32-random-characters"
 cargo run -p sheetbrief-mcp
 ```
 
-- Timely MCP (SSE): `http://127.0.0.1:8787/sse`
-- MCP Streamable HTTP: `http://127.0.0.1:8787/mcp`
+- Timely Agent / MCP Streamable HTTP: `http://127.0.0.1:8787/mcp`
+- Legacy SSE compatibility: `http://127.0.0.1:8787/sse`
 - Health: `http://127.0.0.1:8787/healthz`
 - 도구: `analyze_workbook`, `build_report`
 
@@ -82,10 +82,12 @@ cargo run -p sheetbrief-mcp
 만료 다운로드 링크로 반환됩니다. Timely Upload 노드의 `fileUrl`은 HTTPS
 allowlist·공개 IP 확인·리다이렉트 차단·10 MiB 스트리밍 제한을 거쳐 읽습니다.
 
-Timely 커넥터에는 `/sse` 주소와 같은 bearer token을 등록합니다. 업로드용 스킬
-원본은 [timely/sheetbrief/SKILL.md](timely/sheetbrief/SKILL.md)에
-있습니다. 실제 Timely 첨부파일 전달과 다운로드 동작은 외부 연동 게이트로 별도
-표시하며, 로컬 MCP 테스트 통과와 혼동하지 않습니다.
+현재 Timely Agent에서는 우측 패널의 `스킬 + -> .skill/.zip 업로드`로 스킬을
+추가하고, `커넥터 + -> JSON 등록 -> http`에서 `/mcp` 주소와 bearer token을
+등록합니다. `/sse`는 구형 워크플로 SDK 호환 경로로 유지됩니다. 업로드용 스킬
+원본은 [timely/sheetbrief/SKILL.md](timely/sheetbrief/SKILL.md)에 있습니다.
+실제 Timely 첨부파일 전달과 다운로드 동작은 외부 연동 게이트로 별도 표시하며,
+로컬 MCP 테스트 통과와 혼동하지 않습니다.
 
 ```powershell
 .\scripts\package-timely-skill.ps1

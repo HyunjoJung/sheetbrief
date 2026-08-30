@@ -12,11 +12,12 @@ The repository includes `render.yaml` and a multi-stage `Dockerfile`.
 3. Keep the generated `SHEETBRIEF_API_TOKEN` private and copy it into the Timely
    MCP connector's bearer-token setting.
 4. Verify `https://<service>.onrender.com/healthz` returns `{"status":"ok"}`.
-5. Register `https://<service>.onrender.com/sse` as Timely's MCP endpoint.
+5. Register `https://<service>.onrender.com/mcp` in Timely Agent's HTTP MCP
+   connector.
 
-The same deployment also exposes Streamable HTTP at `/mcp` for current MCP
-clients. Timely's published workflow SDK currently invokes remote tools through
-the SSE transport, so the contest connector must use `/sse`.
+The same deployment also exposes legacy SSE at `/sse`. Use `/mcp` in the
+current Timely Agent `mcpServers` JSON connector; `/sse` remains available for
+older workflow clients that only implement the legacy handshake.
 
 Render injects `RENDER_EXTERNAL_URL`; SheetBrief uses it automatically for the
 capability download links. A free Render service sleeps after 15 minutes without
@@ -71,18 +72,37 @@ Both scripts initialize the transport, call `analyze_workbook`, call
 ## Timely wiring
 
 ```text
-Start -> Upload -> analyze_workbook -> Solar -> build_report -> End
+Start -> File Upload -> Tool Node: analyze_workbook
+      -> Agent: Solar Pro4 -> Tool Node: build_report -> End
 ```
 
 Map Upload `fileUrl` to `file_url` and `fileName` to `file_name` in both tool
 nodes. Map both result `download_url` values into the End response. Never put
 the signed upload URL, API token, or base64 payload in the visible conversation.
 
-In the current Timely UI, upload the packaged skill from the Agent side panel
-with `스킬 + -> .skill/.zip 업로드`. Register the service under
-`스토어 -> 커넥터 -> MCP 커넥터`, then create the workflow from
-`Labs -> AI 에이전트 -> 에이전트 만들기`. Use `Solar Pro 4` for the LLM node.
-These paths are documented in Timely's official
+In the current Timely UI, open `에이전트` and use the right panel:
+
+1. `스킬 + -> .skill/.zip 업로드` for `artifacts/sheetbrief-timely.zip`.
+2. `커넥터 + -> JSON 등록 -> http` for the deployed service:
+
+```json
+{
+  "mcpServers": {
+    "sheetbrief": {
+      "description": "Evidence-linked spreadsheet decision briefs",
+      "url": "https://<service>.onrender.com/mcp",
+      "headers": {
+        "Authorization": "Bearer <SHEETBRIEF_API_TOKEN>"
+      }
+    }
+  }
+}
+```
+
+Create the contest workflow from
+`Labs -> 에이전트 빌더 -> 에이전트 만들기`, add the nodes shown above, and
+select `Solar Pro4` in the Agent node. The corresponding controls are described
+in Timely's official
 [agent guide](https://timely-hub.github.io/timely-manual/user/getting-started/agents/),
 [builder guide](https://timely-hub.github.io/timely-manual/user/reference/ai-agents/),
 and [model guide](https://timely-hub.github.io/timely-manual/ai-models/).

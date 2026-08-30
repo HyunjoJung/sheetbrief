@@ -42,8 +42,9 @@ cargo run -- run .\data\meeting-sales-demo.xlsx .\artifacts\mabc-demo
 This writes deterministic `analysis.json`, an editable `report.docx`, and a
 native `report.pdf` preview. See [data/README.md](data/README.md) for provenance.
 
-The server exposes legacy SSE at `/sse` for Timely and modern Streamable HTTP
-at `/mcp` for current MCP clients. Both transports expose the same two tools.
+The current Timely Agent registers the Streamable HTTP endpoint at `/mcp`
+through its `mcpServers` JSON connector. Legacy SSE remains available at `/sse`
+for older workflow clients. Both transports expose the same two tools.
 
 ## Verify
 

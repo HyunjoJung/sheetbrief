@@ -2,8 +2,8 @@
 
 ## Transport
 
-- Timely endpoint: `/sse` with legacy SSE message posting at `/message`
-- Current-client endpoint: `/mcp` with MCP Streamable HTTP
+- Current Timely Agent endpoint: `/mcp` with MCP Streamable HTTP
+- Legacy endpoint: `/sse` with SSE message posting at `/message`
 - Implementation: official Rust SDK `rmcp 3.1.4` for Streamable HTTP and a
   bounded compatibility adapter for Timely's legacy SSE handshake
 - Health endpoint: `GET /healthz`
@@ -85,20 +85,22 @@ back to base64 for test and CLI clients.
 
 ## Timely gate
 
-Timely's official SDK returns Upload-node objects with `fileUrl`, `fileName`,
-and `fileType`. Its
+Timely's current Agent UI accepts a Claude-standard `mcpServers` JSON object.
+Its HTTP template contains a server URL and request headers, so SheetBrief uses
+the deployed `/mcp` endpoint with an `Authorization: Bearer ...` header. The
+published legacy SDK returns Upload-node objects with `fileUrl`, `fileName`,
+and `fileType`; its
 [workflow executor](https://github.com/timely-hub/timely-gpt-sdk/blob/e0fb8e394986438a330e6536d25526b490a20793/src/workflow/workflow-executor.ts#L294-L320)
-currently invokes remote MCP nodes when their transport is `sse`; it also
-forwards configured request headers. The SheetBrief skill maps the first two
-Upload fields directly to both MCP tools. The live Timely deployment still
-requires an integration run:
+invokes remote MCP nodes when their transport is `sse`. SheetBrief retains that
+compatibility endpoint and maps the first two Upload fields directly to both
+tools. The live Timely deployment still requires an integration run:
 
-1. initializing and listing both tools;
+1. initializing `/mcp` and listing both tools;
 2. passing Upload `fileUrl` and `fileName` without model-visible base64;
 3. receiving `context` without truncation;
 4. exposing DOCX and PDF as downloadable files; and
 5. confirming auth headers, the observed storage host, and size limits.
 
 Local tests cover both transports and authenticate the SSE GET and message POST
-with the same bearer header. The remaining gate is the hosted Timely handshake,
-not an unimplemented transport adapter.
+with the same bearer header. The remaining gate is the hosted Timely connector
+and File Upload mapping, not an unimplemented transport adapter.
