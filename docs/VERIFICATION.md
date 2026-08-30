@@ -39,9 +39,10 @@ The workspace tests cover:
 - Timely-compatible legacy SSE authentication and tool invocation
 - current MCP Streamable HTTP initialization and tool invocation
 - public-mode capability URL generation and DOCX download
+- configured public-host acceptance with unrelated-host rejection
 
-The current workspace run contains 13 passing tests: seven data/report tests,
-three MCP unit tests, and three MCP transport integration tests.
+The current workspace run contains 15 passing tests: seven data/report tests,
+four MCP unit tests, and four MCP transport integration tests.
 
 ## Dependency migration gate
 
@@ -84,6 +85,25 @@ run as UID/GID 65532 on Debian Bookworm. The final smoke run verified:
 The runtime uses a dedicated writable XDG Fontconfig cache for UID/GID 65532;
 the final smoke log contained no Fontconfig cache warnings.
 
+## Public HTTPS transport gate
+
+The release container was exposed through a temporary TLS tunnel and tested
+from its public origin. `scripts/smoke-mcp.ps1` and `scripts/smoke-sse.ps1`
+both used the public GitHub demo workbook through `file_url`, not local bytes.
+The runs verified:
+
+- Streamable HTTP protocol `2025-06-18` initialization;
+- legacy SSE protocol `2024-11-05` initialization and both tool definitions;
+- `analyze_workbook` followed by `build_report` over both transports;
+- HTTPS workbook retrieval through the explicit host allowlist;
+- public capability downloads with valid DOCX ZIP and PDF signatures; and
+- identical 50-row `A3:D52`, 7,195-byte DOCX, and 32,480-byte PDF results.
+
+The Streamable HTTP server now derives its DNS-rebinding host allowlist from the
+validated public base URL while retaining rmcp's loopback defaults. A regression
+test proves the configured public host is accepted and an unrelated host still
+receives HTTP 403.
+
 ## Visual gate
 
 The Korean demo report was rendered directly with `rwml`, inspected as PDF,
@@ -98,8 +118,9 @@ ignored by Git. The visually approved copies under `docs/assets/` and
 
 ## External Timely gate
 
-Local verification does not prove Timely interoperability. Do not mark this gate
-complete until a real Timely agent can:
+Public HTTPS verification proves both transports and the Timely-shaped URL
+input, but it does not prove Timely's hosted connector mapping. Do not mark this
+gate complete until a real Timely agent can:
 
 1. initialize the deployed `/sse` endpoint and list both tools;
 2. map Upload `fileUrl` and `fileName` without exposing base64 or the signed URL;

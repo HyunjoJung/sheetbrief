@@ -49,6 +49,25 @@ Run the full MCP and download smoke test with:
   -Token replace-with-at-least-32-random-characters
 ```
 
+For a deployed service, exercise Timely's URL-shaped input over both transports:
+
+```powershell
+.\scripts\smoke-mcp.ps1 `
+  -BaseUrl https://<service>.onrender.com `
+  -Token $env:SHEETBRIEF_API_TOKEN `
+  -FileUrl https://<allowed-host>/sales.xlsx `
+  -FileName sales.xlsx
+
+.\scripts\smoke-sse.ps1 `
+  -BaseUrl https://<service>.onrender.com `
+  -Token $env:SHEETBRIEF_API_TOKEN `
+  -FileUrl https://<allowed-host>/sales.xlsx `
+  -FileName sales.xlsx
+```
+
+Both scripts initialize the transport, call `analyze_workbook`, call
+`build_report`, download both capability URLs, and verify DOCX/PDF signatures.
+
 ## Timely wiring
 
 ```text

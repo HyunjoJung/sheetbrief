@@ -3,7 +3,9 @@ param(
     [string]$BaseUrl = "http://127.0.0.1:8787",
     [Parameter(Mandatory = $true)]
     [string]$Token,
-    [string]$Workbook = (Join-Path $PSScriptRoot "..\data\meeting-sales-demo.xlsx")
+    [string]$Workbook = (Join-Path $PSScriptRoot "..\data\meeting-sales-demo.xlsx"),
+    [string]$FileUrl,
+    [string]$FileName
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,24 +64,60 @@ if (-not $sessionId) {
         method = "notifications/initialized"
     })
 
-$workbookPath = (Resolve-Path -LiteralPath $Workbook).Path
-$encoded = [Convert]::ToBase64String([IO.File]::ReadAllBytes($workbookPath))
-$result = Invoke-McpRequest -SessionId $sessionId -Payload @{
+$inputArguments = @{}
+if ($FileUrl) {
+    if (-not $FileName) {
+        $FileName = [IO.Path]::GetFileName(([Uri]$FileUrl).AbsolutePath)
+    }
+    if (-not $FileName) {
+        throw "FileName is required when it cannot be derived from FileUrl"
+    }
+    $inputArguments.file_name = $FileName
+    $inputArguments.file_url = $FileUrl
+    $sourceMode = "file_url"
+}
+else {
+    $workbookPath = (Resolve-Path -LiteralPath $Workbook).Path
+    $inputArguments.file_name = [IO.Path]::GetFileName($workbookPath)
+    $inputArguments.workbook_base64 = [Convert]::ToBase64String(
+        [IO.File]::ReadAllBytes($workbookPath)
+    )
+    $sourceMode = "workbook_base64"
+}
+
+$analysis = Invoke-McpRequest -SessionId $sessionId -Payload @{
     jsonrpc = "2.0"
     id = 2
     method = "tools/call"
     params = @{
+        name = "analyze_workbook"
+        arguments = $inputArguments
+    }
+}
+if ($analysis.Json.error) {
+    throw ($analysis.Json.error | ConvertTo-Json -Compress)
+}
+if ($analysis.Json.result.isError) {
+    throw ($analysis.Json.result | ConvertTo-Json -Depth 20 -Compress)
+}
+
+$reportArguments = $inputArguments.Clone()
+$reportArguments.include_pdf = $true
+$result = Invoke-McpRequest -SessionId $sessionId -Payload @{
+    jsonrpc = "2.0"
+    id = 3
+    method = "tools/call"
+    params = @{
         name = "build_report"
-        arguments = @{
-            file_name = [IO.Path]::GetFileName($workbookPath)
-            workbook_base64 = $encoded
-            include_pdf = $true
-        }
+        arguments = $reportArguments
     }
 }
 
 if ($result.Json.error) {
     throw ($result.Json.error | ConvertTo-Json -Compress)
+}
+if ($result.Json.result.isError) {
+    throw ($result.Json.result | ConvertTo-Json -Depth 20 -Compress)
 }
 $structured = $result.Json.result.structuredContent
 $docxUrl = $structured.report.download_url
@@ -105,6 +143,7 @@ try {
     [pscustomobject]@{
         status = "ok"
         session_id = $sessionId
+        source_mode = $sourceMode
         docx_bytes = $docx.Length
         pdf_bytes = $pdf.Length
         source_rows = $structured.context.dataset.data_rows

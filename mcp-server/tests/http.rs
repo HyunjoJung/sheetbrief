@@ -282,6 +282,75 @@ async fn public_server_returns_a_capability_download_url_instead_of_base64() {
     server.await.unwrap();
 }
 
+#[tokio::test]
+async fn streamable_http_allows_the_configured_public_host_only() {
+    let cancellation_token = CancellationToken::new();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let app = build_router_with_config(
+        cancellation_token.child_token(),
+        None,
+        ServerConfig {
+            public_base_url: Some("https://sheetbrief.example".to_string()),
+            ..ServerConfig::default()
+        },
+    );
+    let server = tokio::spawn({
+        let cancellation_token = cancellation_token.clone();
+        async move {
+            axum::serve(listener, app)
+                .with_graceful_shutdown(async move {
+                    cancellation_token.cancelled_owned().await;
+                })
+                .await
+                .unwrap();
+        }
+    });
+
+    let initialize = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-06-18",
+            "capabilities": {},
+            "clientInfo": { "name": "public-host-test", "version": "1.0" }
+        }
+    });
+    let client = reqwest::Client::new();
+    let accepted = client
+        .post(format!("http://{address}/mcp"))
+        .header(reqwest::header::HOST, "sheetbrief.example")
+        .header(
+            reqwest::header::ACCEPT,
+            "application/json, text/event-stream",
+        )
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(initialize.to_string())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(accepted.status(), reqwest::StatusCode::OK);
+    assert!(accepted.headers().contains_key("mcp-session-id"));
+
+    let rejected = client
+        .post(format!("http://{address}/mcp"))
+        .header(reqwest::header::HOST, "evil.example")
+        .header(
+            reqwest::header::ACCEPT,
+            "application/json, text/event-stream",
+        )
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(initialize.to_string())
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(rejected.status(), reqwest::StatusCode::FORBIDDEN);
+
+    cancellation_token.cancel();
+    server.await.unwrap();
+}
+
 fn as_arguments(value: Value) -> Map<String, Value> {
     value.as_object().unwrap().clone()
 }

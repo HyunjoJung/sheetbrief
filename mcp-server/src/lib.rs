@@ -372,6 +372,7 @@ pub fn build_router_with_config(
     token: Option<String>,
     config: ServerConfig,
 ) -> Router {
+    let allowed_mcp_hosts = streamable_http_allowed_hosts(&config);
     let state = Arc::new(AppState::new(config));
     let service_state = state.clone();
     let service: StreamableHttpService<SheetBriefMcp, LocalSessionManager> =
@@ -379,6 +380,7 @@ pub fn build_router_with_config(
             move || Ok(SheetBriefMcp::with_state(service_state.clone())),
             Default::default(),
             StreamableHttpServerConfig::default()
+                .with_allowed_hosts(allowed_mcp_hosts)
                 .with_sse_keep_alive(None)
                 .with_cancellation_token(cancellation_token),
         );
@@ -809,6 +811,20 @@ fn normalize_public_base_url(value: &str) -> Result<String, String> {
     Ok(value.trim_end_matches('/').to_string())
 }
 
+fn streamable_http_allowed_hosts(config: &ServerConfig) -> Vec<String> {
+    let mut hosts = StreamableHttpServerConfig::default().allowed_hosts;
+    if let Some(public_base_url) = config.public_base_url.as_deref() {
+        if let Ok(url) = Url::parse(public_base_url) {
+            if let Some(host) = url.host_str() {
+                hosts.push(host.to_ascii_lowercase());
+            }
+        }
+    }
+    hosts.sort();
+    hosts.dedup();
+    hosts
+}
+
 fn normalize_host_pattern(value: &str) -> String {
     value
         .trim()
@@ -920,5 +936,17 @@ mod tests {
         );
         assert!(normalize_public_base_url("http://sheetbrief.example").is_err());
         assert!(normalize_public_base_url("https://sheetbrief.example/path").is_err());
+    }
+
+    #[test]
+    fn public_base_url_extends_streamable_http_host_allowlist() {
+        let config = ServerConfig {
+            public_base_url: Some("https://SheetBrief.Example".to_string()),
+            ..ServerConfig::default()
+        };
+        let hosts = streamable_http_allowed_hosts(&config);
+        assert!(hosts.iter().any(|host| host == "sheetbrief.example"));
+        assert!(hosts.iter().any(|host| host == "127.0.0.1"));
+        assert!(!hosts.iter().any(|host| host == "evil.example"));
     }
 }
