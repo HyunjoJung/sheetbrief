@@ -10,11 +10,16 @@ use tokio_util::sync::CancellationToken;
 
 const BASELINE: &[u8] = include_bytes!("../../data/regional-sales-baseline.xlsx");
 
+async fn bind_loopback() -> tokio::net::TcpListener {
+    let address = std::net::SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, 0));
+    tokio::net::TcpListener::bind(address).await.unwrap()
+}
+
 #[tokio::test]
 async fn streamable_http_lists_tools_and_builds_a_reopenable_docx() {
     let cancellation_token = CancellationToken::new();
     let app = build_router(cancellation_token.child_token(), None);
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = bind_loopback().await;
     let address = listener.local_addr().unwrap();
     let server = tokio::spawn({
         let cancellation_token = cancellation_token.clone();
@@ -86,7 +91,7 @@ async fn legacy_sse_transport_enforces_auth_and_calls_tools_for_timely() {
     let cancellation_token = CancellationToken::new();
     let token = "timely-test-token-0123456789abcdef";
     let app = build_router(cancellation_token.child_token(), Some(token.to_string()));
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = bind_loopback().await;
     let address = listener.local_addr().unwrap();
     let server = tokio::spawn({
         let cancellation_token = cancellation_token.clone();
@@ -230,7 +235,7 @@ async fn legacy_sse_transport_enforces_auth_and_calls_tools_for_timely() {
 #[tokio::test]
 async fn public_server_returns_a_capability_download_url_instead_of_base64() {
     let cancellation_token = CancellationToken::new();
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = bind_loopback().await;
     let address = listener.local_addr().unwrap();
     let app = build_router_with_config(
         cancellation_token.child_token(),
@@ -285,7 +290,7 @@ async fn public_server_returns_a_capability_download_url_instead_of_base64() {
 #[tokio::test]
 async fn streamable_http_allows_the_configured_public_host_only() {
     let cancellation_token = CancellationToken::new();
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = bind_loopback().await;
     let address = listener.local_addr().unwrap();
     let app = build_router_with_config(
         cancellation_token.child_token(),
