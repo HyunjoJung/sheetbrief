@@ -216,9 +216,9 @@ dependencies = [
 
 [[package]]
 name = "cfb"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a347dcabdae9c31b0825fd6a8bed285ec9c2acb89c47827126d52fa4f59cece3"
+checksum = "0f13298d9178622b7916ec5d01d470425c04273c8ed07e87b1c38b34c4f4612b"
 dependencies = [
  "fnv",
  "uuid",
@@ -1762,11 +1762,11 @@ checksum = "1df05d141619f779eebe8b63dc82789b9d87387fcdb927713d1badeae6a91f82"
 
 [[package]]
 name = "rxls"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b17c6efadd55c170da83de483e84bdaa0728563996baa5b9967a3b67f43733ce"
+checksum = "2c5def796bd00d72adf2defad96a2f49c63efe4e568a8e26e3c9f54b0cc71ac3"
 dependencies = [
- "cfb 0.14.0",
+ "cfb 0.15.0",
  "chrono",
  "encoding_rs",
  "quick-xml",
